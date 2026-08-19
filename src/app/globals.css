@@ -1,0 +1,214 @@
+:root {
+  --font-sans: var(--font-outfit), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-mono), monospace;
+
+  /* Premium Craft-Studio Dark Theme Palette */
+  --bg-app: #09090e;
+  --bg-card: #12121c;
+  --bg-card-hover: #191929;
+  --border-glow: rgba(168, 85, 247, 0.15); /* Purple accent */
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-color-active: rgba(168, 85, 247, 0.5);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  
+  --accent-purple: #a855f7;
+  --accent-purple-glow: rgba(168, 85, 247, 0.4);
+  --accent-cyan: #06b6d4;
+  --accent-cyan-glow: rgba(6, 182, 212, 0.4);
+  
+  --bg-input: #1b1b2a;
+  --bg-input-hover: #222238;
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 40px rgba(168, 85, 247, 0.05);
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reset and Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: #252538;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #383856;
+}
+
+/* Shimmer Animation for glowing crafts feel */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(168, 85, 247, 0.1); }
+  50% { box-shadow: 0 0 25px rgba(168, 85, 247, 0.3); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.shimmer-btn {
+  background: linear-gradient(90deg, #8a2be2, #4a00e0, #00d2ff, #8a2be2);
+  background-size: 300% 100%;
+  animation: shimmer 8s infinite linear;
+}
+
+/* Standard print media optimization */
+@media print {
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Force browsers to print backgrounds */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-scheme: light !important;
+  }
+
+  /* Hide UI elements that shouldn't print */
+  header,
+  .no-print,
+  button,
+  .controls-panel,
+  .upload-zone,
+  .canvas-controls,
+  input,
+  select,
+  .preview-tab-headers {
+    display: none !important;
+  }
+
+  /* Setup full page widths */
+  .app-container {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-page-break {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* PDF cover sheet layout */
+  .print-cover {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 2in;
+    text-align: center;
+  }
+
+  .print-title {
+    font-size: 32pt;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: #111;
+  }
+
+  .print-meta {
+    font-size: 14pt;
+    color: #555;
+    margin-bottom: 40px;
+  }
+
+  .print-previews {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 50px;
+  }
+
+  .print-preview-box {
+    border: 1px solid #ccc;
+    padding: 10px;
+    background: #f9f9f9;
+  }
+
+  /* Legend print styles */
+  .print-legend-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 30px !important;
+  }
+
+  .print-legend-table th, 
+  .print-legend-table td {
+    border: 1px solid #ddd !important;
+    padding: 10px !important;
+    text-align: left !important;
+    font-size: 10pt !important;
+  }
+
+  .print-legend-table th {
+    background-color: #f2f2f2 !important;
+    font-weight: bold !important;
+  }
+
+  .print-color-swatch {
+    width: 24px !important;
+    height: 24px !important;
+    border: 1px solid #000 !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+  }
+
+  /* Canvas printing settings */
+  .print-grid-container {
+    width: 100% !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-grid-svg {
+    max-width: 100% !important;
+    max-height: 90vh !important;
+    border: 1px solid #000 !important;
+  }
+}
