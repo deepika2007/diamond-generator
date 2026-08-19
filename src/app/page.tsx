@@ -131,10 +131,7 @@ export default function App() {
     if (!imageSrc) return;
 
     const img = new Image();
-    // Only set crossOrigin for external URLs to prevent CORS errors on data URLs in proxies like ngrok
-    if (imageSrc.startsWith('http') && !imageSrc.startsWith('data:')) {
-      img.crossOrigin = 'anonymous';
-    }
+    img.crossOrigin = 'anonymous';
     img.src = imageSrc;
     img.onload = () => {
       // Create off-screen canvas resizer
@@ -210,28 +207,31 @@ export default function App() {
     const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
     setArtworkName(nameWithoutExt);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        const dataUrl = event.target.result as string;
-        
-        // Fetch dimensions
-        const img = new Image();
-        img.src = dataUrl;
-        img.onload = () => {
-          setOriginalWidth(img.width);
-          setOriginalHeight(img.height);
-          setImageSrc(dataUrl);
+    // Revoke previous blob URL to prevent memory leaks
+    if (imageSrc && imageSrc.startsWith('blob:')) {
+      URL.revokeObjectURL(imageSrc);
+    }
 
-          // Force calculate initial height based on width 30
-          const ratio = img.height / img.width;
-          const startWidth = unit === 'inch' ? 12 : 30;
-          setWidthInput(startWidth.toString());
-          setHeightInput((startWidth * ratio).toFixed(1));
-        };
-      }
+    // Create a local blob Object URL (extremely fast and bypasses CSP rules under proxies)
+    const blobUrl = URL.createObjectURL(file);
+    
+    const img = new Image();
+    img.src = blobUrl;
+    img.onload = () => {
+      setOriginalWidth(img.width);
+      setOriginalHeight(img.height);
+      setImageSrc(blobUrl);
+
+      // Force calculate initial height based on width 30
+      const ratio = img.height / img.width;
+      const startWidth = unit === 'inch' ? 12 : 30;
+      setWidthInput(startWidth.toString());
+      setHeightInput((startWidth * ratio).toFixed(1));
     };
-    reader.readAsDataURL(file);
+
+    img.onerror = (err) => {
+      console.error("Failed to load image blob URL", err);
+    };
   };
 
   // Printable SVG construction at exact physical scale (2.5mm per drill cell)
