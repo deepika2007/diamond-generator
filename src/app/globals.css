@@ -89,8 +89,19 @@ html, body {
   animation: shimmer 8s infinite linear;
 }
 
-/* Standard print media optimization */
 @media print {
+  @page {
+    size: portrait;
+    margin: 0; /* Removes browser print headers/footers and margins */
+  }
+
+  /* Force browser to render background colors/graphics on print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-scheme: light !important;
+  }
+
   body, html {
     background: #ffffff !important;
     color: #000000 !important;
@@ -99,23 +110,28 @@ html, body {
     height: auto !important;
   }
 
-  /* Force browsers to print backgrounds */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-scheme: light !important;
+  /* Override Next.js container heights during print to allow pagination */
+  #app-root,
+  #generator-main,
+  [class*="container"] {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    position: relative !important;
   }
 
   /* Hide UI elements that shouldn't print */
   header,
+  main,
+  [class*="workspace"],
+  [class*="configSidebar"],
+  [class*="canvasArea"],
+  [class*="legendSidebar"],
   .no-print,
   button,
-  .controls-panel,
-  .upload-zone,
-  .canvas-controls,
   input,
-  select,
-  .preview-tab-headers {
+  select {
     display: none !important;
   }
 
@@ -196,19 +212,28 @@ html, body {
     vertical-align: middle !important;
   }
 
-  /* Canvas printing settings */
+  /* Canvas printing settings forced to exactly one sheet height with a 1cm border margin */
   .print-grid-container {
-    width: 100% !important;
-    margin: 0 auto !important;
     display: flex !important;
     justify-content: center !important;
+    align-items: center !important;
+    height: 100vh !important;
+    padding: 1cm !important; /* Maintains at least 1cm border margin around the painting */
+    box-sizing: border-box !important;
+    background-color: #ffffff !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+    overflow: hidden !important;
   }
 
   .print-grid-svg {
+    display: block !important;
+    margin: 0 auto !important;
     max-width: 100% !important;
-    max-height: 90vh !important;
-    border: 1px solid #000 !important;
+    max-height: 100% !important;
+    width: auto !important;
+    height: auto !important;
   }
 }

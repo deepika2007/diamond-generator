@@ -85,6 +85,10 @@ export default function App() {
   const [originalWidth, setOriginalWidth] = useState<number>(0);
   const [originalHeight, setOriginalHeight] = useState<number>(0);
 
+  // Customized Titles
+  const [artworkName, setArtworkName] = useState<string>('Cosmic Sunset');
+  const [companyName, setCompanyName] = useState<string>('Diamond Art Studio');
+
   // Conversion Inputs
   const [unit, setUnit] = useState<'inch' | 'cm'>('cm');
   const [widthInput, setWidthInput] = useState<string>('30');
@@ -127,7 +131,10 @@ export default function App() {
     if (!imageSrc) return;
 
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Only set crossOrigin for external URLs to prevent CORS errors on data URLs in proxies like ngrok
+    if (imageSrc.startsWith('http') && !imageSrc.startsWith('data:')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.src = imageSrc;
     img.onload = () => {
       // Create off-screen canvas resizer
@@ -199,6 +206,10 @@ export default function App() {
   };
 
   const handleImageFile = (file: File) => {
+    // Set default artwork name from file name (no extension)
+    const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+    setArtworkName(nameWithoutExt);
+
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target?.result) {
@@ -223,12 +234,17 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  // Printable SVG construction
+  // Printable SVG construction at exact physical scale (2.5mm per drill cell)
   const renderPrintSvg = () => {
     if (!processedResult) return null;
-    const cell = 12;
-    const svgW = gridWidth * cell;
-    const svgH = gridHeight * cell;
+    
+    const cellSize = 10; // SVG grid coordinates units per cell
+    const svgW = gridWidth * cellSize;
+    const svgH = gridHeight * cellSize;
+
+    // Physical sizes in millimeters (2.5mm per drill)
+    const physWidthMm = gridWidth * 2.5;
+    const physHeightMm = gridHeight * 2.5;
     
     // Build lookup map for color values
     const paletteMap: Record<string, typeof processedResult.palette[0]> = {};
@@ -240,10 +256,14 @@ export default function App() {
       <svg
         className={styles.printGridSvg}
         viewBox={`0 0 ${svgW} ${svgH}`}
-        width={svgW}
-        height={svgH}
+        width="100%"
+        height="100%"
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* Background sheet */}
+        <rect x="0" y="0" width={svgW} height={svgH} fill="#ffffff" />
+
+        {/* Draw the grids and symbols */}
         {Array.from({ length: gridHeight }).map((_, row) => {
           return Array.from({ length: gridWidth }).map((_, col) => {
             const idx = row * gridWidth + col;
@@ -251,42 +271,71 @@ export default function App() {
             if (!dmc) return null;
             const pInfo = paletteMap[dmc.code];
             const sym = pInfo?.symbol || '';
-            const fill = viewMode === 'symbols-only' ? '#ffffff' : dmc.hex;
-            const textColor = viewMode === 'symbols-only' 
-              ? '#000000' 
-              : (dmc.r * 0.2126 + dmc.g * 0.7152 + dmc.b * 0.0722 > 120 ? '#000000' : '#ffffff');
+
+            // Map fills and colors directly from active screen canvas viewMode settings
+            let fill = dmc.hex;
+            let fillOpacity = 1.0;
+            let textColor = '#000000';
+
+            if (viewMode === 'symbols-only') {
+              fill = '#ffffff';
+              textColor = '#000000';
+            } else if (viewMode === 'high-contrast') {
+              fill = dmc.hex;
+              fillOpacity = 0.25; // Faded pale background
+              textColor = '#000000';
+            } else {
+              // Color Mode: dynamic text contrast
+              fill = dmc.hex;
+              const luminance = dmc.r * 0.2126 + dmc.g * 0.7152 + dmc.b * 0.0722;
+              textColor = luminance > 120 ? '#000000' : '#ffffff';
+            }
+
+            // Sync grid lines border settings
+            let strokeColor = 'none';
+            if (showGridLines) {
+              strokeColor = '#475569';
+            } else if (drillShape === 'round' && (viewMode === 'symbols-only' || viewMode === 'high-contrast')) {
+              strokeColor = '#cbd5e1'; // pale border to keep round drill outlines visible
+            }
+
+            const x = col * cellSize;
+            const y = row * cellSize;
 
             return (
               <g key={idx}>
                 {drillShape === 'round' ? (
                   <circle
-                    cx={col * cell + cell / 2}
-                    cy={row * cell + cell / 2}
-                    r={cell / 2 - 0.5}
+                    cx={x + cellSize / 2}
+                    cy={y + cellSize / 2}
+                    r={cellSize / 2 - 0.5}
                     fill={fill}
-                    stroke="#94a3b8"
-                    strokeWidth="0.25"
+                    fillOpacity={fillOpacity}
+                    stroke={strokeColor}
+                    strokeWidth="0.3"
                   />
                 ) : (
                   <rect
-                    x={col * cell}
-                    y={row * cell}
-                    width={cell}
-                    height={cell}
+                    x={x + 0.5}
+                    y={y + 0.5}
+                    width={cellSize - 1}
+                    height={cellSize - 1}
                     fill={fill}
-                    stroke="#94a3b8"
-                    strokeWidth="0.25"
+                    fillOpacity={fillOpacity}
+                    stroke={strokeColor}
+                    strokeWidth="0.3"
                   />
                 )}
                 <text
-                  x={col * cell + cell / 2}
-                  y={row * cell + cell / 2}
+                  x={x + cellSize / 2}
+                  y={y + cellSize / 2}
                   fill={textColor}
-                  fontSize={cell * 0.55}
+                  fontSize={cellSize * 0.65}
                   fontWeight="bold"
                   fontFamily="monospace"
                   textAnchor="middle"
-                  dominantBaseline="central"
+                  dominantBaseline="middle"
+                  alignmentBaseline="middle"
                 >
                   {sym}
                 </text>
@@ -341,11 +390,31 @@ export default function App() {
                     Replace Image
                   </div>
                 </div>
-                <div className={styles.presetLabel}>Or try another preset:</div>
+                <div className={styles.controlGroup} style={{ marginTop: '4px' }}>
+                  <label className={styles.presetLabel}>Artwork Painting Name</label>
+                  <input
+                    type="text"
+                    className={styles.textInput}
+                    value={artworkName}
+                    onChange={(e) => setArtworkName(e.target.value)}
+                    placeholder="Enter artwork name"
+                  />
+                </div>
+                <div className={styles.controlGroup} style={{ marginTop: '2px' }}>
+                  <label className={styles.presetLabel}>Company / Studio Name</label>
+                  <input
+                    type="text"
+                    className={styles.textInput}
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Enter studio name"
+                  />
+                </div>
+                <div className={styles.presetLabel} style={{ marginTop: '6px' }}>Or try another preset:</div>
                 <div className={styles.presetContainer}>
-                  <button className={styles.presetBtn} onClick={() => { setImageSrc(generatePreset('sunset')); setOriginalWidth(400); setOriginalHeight(400); }}>🌅 Sunset</button>
-                  <button className={styles.presetBtn} onClick={() => { setImageSrc(generatePreset('wave')); setOriginalWidth(400); setOriginalHeight(400); }}>🌊 Wave</button>
-                  <button className={styles.presetBtn} onClick={() => { setImageSrc(generatePreset('mandala')); setOriginalWidth(400); setOriginalHeight(400); }}>🌀 Mandala</button>
+                  <button className={styles.presetBtn} onClick={() => { setImageSrc(generatePreset('sunset')); setOriginalWidth(400); setOriginalHeight(400); setArtworkName('Cosmic Sunset'); }}>🌅 Sunset</button>
+                  <button className={styles.presetBtn} onClick={() => { setImageSrc(generatePreset('wave')); setOriginalWidth(400); setOriginalHeight(400); setArtworkName('Ocean Wave'); }}>🌊 Wave</button>
+                  <button className={styles.presetBtn} onClick={() => { setImageSrc(generatePreset('mandala')); setOriginalWidth(400); setOriginalHeight(400); setArtworkName('Neon Mandala'); }}>🌀 Mandala</button>
                 </div>
               </div>
             ) : (
@@ -479,6 +548,8 @@ export default function App() {
                 <option value="mixed">Mixed Alphanumeric & Symbols</option>
               </select>
             </div>
+
+
           </div>
 
         </section>
@@ -608,91 +679,9 @@ export default function App() {
       {/* Hidden layout specifically for print formatting (@media print) */}
       {processedResult && (
         <div className={styles.printOnlyLayout} id="print-layout">
-          {/* Page 1: PDF cover page */}
-          <div className="print-cover">
-            <h1 className="print-title">Diamond Painting Pattern Chart</h1>
-            <p className="print-meta">Generated by Diamond Painting Generator</p>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', width: '80%', margin: '0 auto 40px auto', textAlign: 'left', border: '1px solid #ddd', padding: '20px', borderRadius: '8px' }}>
-              <div><strong>Physical Size:</strong> {widthInput} × {heightInput} {unit === 'inch' ? 'inches' : 'cm'}</div>
-              <div><strong>Grid Dimensions:</strong> {gridWidth} × {gridHeight} drills</div>
-              <div><strong>Total Drills:</strong> { (gridWidth * gridHeight).toLocaleString() } stones</div>
-              <div><strong>Unique DMC Colors:</strong> {processedResult.palette.length}</div>
-              <div><strong>Drill Shapes:</strong> {drillShape === 'round' ? 'Round Drills' : 'Square Drills'}</div>
-            </div>
-
-            <div className="print-previews">
-              <div className="print-preview-box">
-                <p style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '10pt' }}>Original Photo</p>
-                <img src={imageSrc} alt="Original" style={{ width: '220px', height: '220px', objectFit: 'contain' }} />
-              </div>
-              <div className="print-preview-box">
-                <p style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '10pt' }}>Diamond Chart Preview</p>
-                <div style={{ width: '220px', height: '220px', border: '1px solid #000', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  <img src={imageSrc} alt="Pixelated Preview" style={{ width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' }} />
-                </div>
-              </div>
-            </div>
-            
-            <p style={{ fontSize: '9pt', color: '#666' }}>
-              This document contains the complete canvas symbol map and shopping checklist requirements.<br />
-              All quantities listed in the legend include a <strong>10% safety margin buffer</strong>.
-            </p>
-          </div>
-
-          {/* Page 2: DMC thread checklist & instructions booklet */}
-          <div className="print-page-break" style={{ padding: '0.5in' }}>
-            <h2 style={{ fontSize: '20pt', borderBottom: '2px solid #000', paddingBottom: '8px', marginBottom: '20px' }}>
-              DMC Drill Purchase Checklist & Legend
-            </h2>
-            <p style={{ marginBottom: '15px', fontSize: '10pt', color: '#333' }}>
-              Use this checklist to buy your diamond painting drills. Values inside brackets denote exact grid coordinates counts.
-            </p>
-            <table className="print-legend-table">
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th>DMC Code</th>
-                  <th>Color Name</th>
-                  <th>RGB / Hex Preview</th>
-                  <th>Drills Required (+10% buffer)</th>
-                  <th>Completed Check</th>
-                </tr>
-              </thead>
-              <tbody>
-                {processedResult.palette.map((item) => (
-                  <tr key={item.dmc.code}>
-                    <td style={{ fontWeight: 'bold', fontSize: '12pt', textAlign: 'center', fontFamily: 'monospace' }}>
-                      {item.symbol}
-                    </td>
-                    <td style={{ fontWeight: 'bold' }}>DMC {item.dmc.code}</td>
-                    <td>{item.dmc.name}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className="print-color-swatch" style={{ backgroundColor: item.dmc.hex }} />
-                        <span style={{ fontSize: '8pt', fontFamily: 'monospace' }}>{item.dmc.hex}</span>
-                      </div>
-                    </td>
-                    <td style={{ fontWeight: 'bold' }}>
-                      {Math.ceil(item.count * 1.10).toLocaleString()} <span style={{ fontWeight: 'normal', fontSize: '8pt', color: '#666' }}>({item.count} pixels)</span>
-                    </td>
-                    <td style={{ width: '80px', border: '1px solid #ccc' }} />
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Page 3+: The full-size printable grid map */}
-          <div className="print-page-break" style={{ padding: '0.4in', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '18pt', marginBottom: '10px' }}>Symbol Grid Chart Map</h2>
-            <p style={{ fontSize: '9pt', color: '#555', marginBottom: '20px' }}>
-              Grid dimensions: {gridWidth} × {gridHeight} drills. Format: {viewMode === 'symbols-only' ? 'B&W Symbols Map' : 'Colored Symbols Map'}
-            </p>
-            
-            <div className="print-grid-container">
-              {renderPrintSvg()}
-            </div>
+          {/* Printable grid map page - renders directly onto paper for stone sticking */}
+          <div className="print-grid-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            {renderPrintSvg()}
           </div>
         </div>
       )}
