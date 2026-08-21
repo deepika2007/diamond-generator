@@ -91,7 +91,7 @@ html, body {
 
 @media print {
   @page {
-    size: portrait;
+    size: landscape;
     margin: 0; /* Removes browser print headers/footers and margins */
   }
 
@@ -113,18 +113,20 @@ html, body {
   /* Override Next.js container heights during print to allow pagination */
   #app-root,
   #generator-main,
-  [class*="container"] {
+  [class*="container"],
+  main {
     display: block !important;
     height: auto !important;
     min-height: auto !important;
     overflow: visible !important;
     position: relative !important;
+    background: transparent !important;
   }
 
   /* Hide UI elements that shouldn't print */
   header,
-  main,
-  [class*="workspace"],
+  section:not(.print-canvas-side),
+  aside,
   [class*="configSidebar"],
   [class*="canvasArea"],
   [class*="legendSidebar"],
@@ -143,97 +145,126 @@ html, body {
     margin: 0 !important;
   }
 
-  .print-page-break {
-    page-break-before: always !important;
-    break-before: page !important;
-  }
-
-  /* PDF cover sheet layout */
-  .print-cover {
+  /* Unified landscape print container */
+  .print-only-layout-unified {
     display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    padding: 2in;
-    text-align: center;
-  }
-
-  .print-title {
-    font-size: 32pt;
-    font-weight: 800;
-    margin-bottom: 20px;
-    color: #111;
-  }
-
-  .print-meta {
-    font-size: 14pt;
-    color: #555;
-    margin-bottom: 40px;
-  }
-
-  .print-previews {
-    display: flex;
-    gap: 40px;
-    margin-bottom: 50px;
-  }
-
-  .print-preview-box {
-    border: 1px solid #ccc;
-    padding: 10px;
-    background: #f9f9f9;
-  }
-
-  /* Legend print styles */
-  .print-legend-table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    margin-top: 30px !important;
-  }
-
-  .print-legend-table th, 
-  .print-legend-table td {
-    border: 1px solid #ddd !important;
-    padding: 10px !important;
-    text-align: left !important;
-    font-size: 10pt !important;
-  }
-
-  .print-legend-table th {
-    background-color: #f2f2f2 !important;
-    font-weight: bold !important;
-  }
-
-  .print-color-swatch {
-    width: 24px !important;
-    height: 24px !important;
-    border: 1px solid #000 !important;
-    display: inline-block !important;
-    vertical-align: middle !important;
-  }
-
-  /* Canvas printing settings forced to exactly one sheet height with a 1cm border margin */
-  .print-grid-container {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    height: 100vh !important;
-    padding: 1cm !important; /* Maintains at least 1cm border margin around the painting */
+    flex-direction: row !important;
+    width: 297mm !important; /* Standard A4 landscape width */
+    height: 210mm !important; /* Standard A4 landscape height */
+    padding: 10mm !important;
     box-sizing: border-box !important;
     background-color: #ffffff !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    margin: 0 auto !important;
-    text-align: center !important;
-    overflow: hidden !important;
+    page-break-after: always !important;
   }
 
+  .print-canvas-side {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding-right: 8mm !important;
+    border-right: 1px solid #ccc !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-canvas-container {
+    width: 100% !important;
+    height: calc(100% - 15mm) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .print-canvas-container svg,
   .print-grid-svg {
     display: block !important;
     margin: 0 auto !important;
     max-width: 100% !important;
-    max-height: 100% !important;
+    max-height: 165mm !important;
     width: auto !important;
     height: auto !important;
+    object-fit: contain !important;
+  }
+
+  .print-legend-side {
+    width: 90mm !important;
+    padding-left: 8mm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-brand-header {
+    border-bottom: 2px solid #000 !important;
+    padding-bottom: 2mm !important;
+    margin-bottom: 3mm !important;
+  }
+
+  .print-company-name {
+    font-size: 14pt !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    margin-bottom: 1px !important;
+    color: #000 !important;
+  }
+
+  .print-title-legend {
+    font-size: 10pt !important;
+    font-weight: 600 !important;
+    color: #555 !important;
+    text-transform: uppercase !important;
+    margin-bottom: 2mm !important;
+  }
+
+  .print-meta-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1mm 2mm !important;
+    font-size: 8pt !important;
+    color: #333 !important;
+    background-color: #f8fafc !important;
+    padding: 2mm !important;
+    border-radius: 4px !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .print-legend-table-wrapper {
+    flex: 1 !important;
+    overflow: hidden !important;
+    margin-top: 3mm !important;
+  }
+
+  .print-legend-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .print-legend-table th, 
+  .print-legend-table td {
+    border: none !important;
+    border-bottom: 1px solid #ddd !important;
+    padding: 1.2mm 1mm !important;
+    text-align: left !important;
+    font-size: 7.5pt !important;
+    color: #000000 !important;
+  }
+
+  .print-legend-table th {
+    background-color: #f2f2f2 !important;
+    border-bottom: 2px solid #000 !important;
+    font-weight: bold !important;
+  }
+
+  .print-color-box-legend {
+    width: 4mm !important;
+    height: 4mm !important;
+    border: 1px solid #000 !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }

@@ -678,10 +678,57 @@ export default function App() {
       {/* ---------------------------------------------------- */}
       {/* Hidden layout specifically for print formatting (@media print) */}
       {processedResult && (
-        <div className={styles.printOnlyLayout} id="print-layout">
-          {/* Printable grid map page - renders directly onto paper for stone sticking */}
-          <div className="print-grid-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            {renderPrintSvg()}
+        <div className={`${styles.printOnlyLayout} print-only-layout-unified`} id="print-layout">
+          <div className="print-canvas-side">
+            <h2 style={{ fontSize: '12pt', marginBottom: '4mm', textAlign: 'center', color: '#000', fontWeight: 'bold' }}>
+              {artworkName || 'Diamond Painting'}
+            </h2>
+            <div className="print-canvas-container">
+              {renderPrintSvg()}
+            </div>
+          </div>
+          
+          <div className="print-legend-side">
+            <div className="print-brand-header">
+              <h1 className="print-company-name">{companyName || 'Diamond Art Studio'}</h1>
+              <div className="print-title-legend">Color Legend Key</div>
+              <div className="print-meta-grid">
+                <div>Size: <strong>{widthInput}x{heightInput} {unit}</strong></div>
+                <div>Stones: <strong>{drillShape === 'square' ? 'Square 2.5mm' : 'Round 2.8mm'}</strong></div>
+                <div>Grid: <strong>{gridWidth}x{gridHeight}</strong></div>
+                <div>Colors: <strong>{processedResult.palette.length}</strong></div>
+              </div>
+            </div>
+            
+            <div className="print-legend-table-wrapper">
+              <table className="print-legend-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '15%', textAlign: 'center' }}>Sym</th>
+                    <th style={{ width: '20%', textAlign: 'center' }}>Color</th>
+                    <th style={{ width: '20%' }}>DMC</th>
+                    <th style={{ width: '45%' }}>Color Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {processedResult.palette.map((color) => (
+                    <tr key={color.dmc.code}>
+                      <td style={{ textAlign: 'center', fontWeight: 'bold', fontFamily: 'monospace', fontSize: '11pt' }}>
+                        {color.symbol}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div 
+                          className="print-color-box-legend" 
+                          style={{ backgroundColor: color.dmc.hex }}
+                        />
+                      </td>
+                      <td><strong>{color.dmc.code}</strong></td>
+                      <td>{color.dmc.name}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
